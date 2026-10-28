@@ -289,6 +289,6 @@ def test_the_flag_needs_an_output_and_the_page_is_written_with_it(tmp_path, monk
 def test_the_prompt_loads_with_its_own_version_and_the_aesthetic():
     from deslopper.providers.openai_compat import load_prompt
     version, digest, body = load_prompt("ultra.md")
-    assert version == "1" and len(digest) == 8
+    assert version == "2" and len(digest) == 8
     for word in ("squircle", "glassmorphism", "wobbl", "viewBox", "under about 3 KB"):
         assert word in body
