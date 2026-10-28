@@ -27,3 +27,6 @@ class RecordedProvider(Provider):
 
     def write_tests(self, source: str, context: dict[str, Any]) -> str:
         return self._read(context["path"], ".tests.json")
+
+    def draw(self, request: str, context: dict[str, Any]) -> str:
+        return self._read(context["path"], ".ultra.json")

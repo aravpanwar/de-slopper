@@ -9,8 +9,18 @@ NOT_TEXT = (Comment, Declaration, Doctype, ProcessingInstruction)
 FORM_CONTROLS = ("input", "select", "textarea", "button", "output", "fieldset", "object")
 
 
-def check_output(source: str, output: str, origin: Path | None) -> Verdict:
+def check_output(source: str, output: str, origin: Path | None,
+                 swaps: dict[str, str] | None = None) -> Verdict:
+    """Compare what the page holds before and after. In ultra mode `swaps` maps an image src to the
+    drawing that replaced it, and an img src may differ from the original only that way."""
     before, after = _inventory(source), _inventory(output)
+    if swaps:
+        back = {new: old for old, new in swaps.items()}
+        after["image or file (src)"] = Counter(back.get(s, s) for s in _srcs(output))
+        known = {*swaps.values(), *(str(t["src"]) for t in _soup(source).find_all("img", src=True))}
+        stray = [s for s in _srcs(output, "img") if s not in known]
+        if stray:
+            return Verdict(f"expected every img src to be an original or a drawing, got {stray[0][:60]!r}")
     for label, original in before.items():
         missing = original - after[label]
         if missing:
@@ -20,8 +30,16 @@ def check_output(source: str, output: str, origin: Path | None) -> Verdict:
     return Verdict()
 
 
+def _soup(markup: str) -> BeautifulSoup:
+    return BeautifulSoup(markup.removeprefix("\ufeff"), "html.parser")
+
+
+def _srcs(markup: str, name: str | bool = True) -> list[str]:
+    return [str(t["src"]) for t in _soup(markup).find_all(name, src=True)]
+
+
 def _inventory(markup: str) -> dict[str, Counter]:
-    soup = BeautifulSoup(markup.removeprefix("\ufeff"), "html.parser")
+    soup = _soup(markup)
     # Words, not text nodes: removing a font tag joins the text around it
     # into one node, and every word of it must still be there.
     texts: Counter = Counter()

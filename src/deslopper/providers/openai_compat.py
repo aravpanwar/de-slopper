@@ -17,13 +17,15 @@ DEFAULT_BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-flash"
 REQUEST_TIMEOUT = 66
 MAX_TOKENS = 8036
+DRAW_MAX_TOKENS = 16036  # a page of drawings is longer than a page of edits
+DRAW_TIMEOUT = 136
 SPLIT_LINES = 436
 MIN_EDITS = 26
 MAX_EDITS = 136
 EDIT_SLACK = 16
 ATTEMPTS = 3
 RETRY_STATUSES = {408, 429, 500, 502, 503, 504}
-PROMPT_FILES = {"python": "python.md", "tests": "tests.md", "html": "web.md"}
+PROMPT_FILES = {"python": "python.md", "tests": "tests.md", "html": "web.md", "ultra": "ultra.md"}
 EM_DASH = "\u2014"
 
 Post = Callable[[str, dict[str, str], dict[str, Any], float], tuple[int, bytes]]
@@ -84,12 +86,16 @@ class OpenAICompatProvider(Provider):
                 f"Import it as: {context.get('module', 'module')}\n\n{source}")
         return self._chat(self._prompts["tests"][2], user)
 
-    def _chat(self, system: str, user: str) -> str:
+    def draw(self, request: str, context: dict[str, Any]) -> str:
+        return self._chat(self._prompts["ultra"][2], request, DRAW_MAX_TOKENS, DRAW_TIMEOUT)
+
+    def _chat(self, system: str, user: str, max_tokens: int = MAX_TOKENS,
+              timeout: float = REQUEST_TIMEOUT) -> str:
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}],
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": max_tokens,
             "response_format": {"type": "json_object"},
         }
         if "deepseek" in self.base_url:
@@ -99,7 +105,7 @@ class OpenAICompatProvider(Provider):
         url = f"{self.base_url}/chat/completions"
 
         for attempt in range(ATTEMPTS):
-            status, body = self._post(url, headers, payload, REQUEST_TIMEOUT)
+            status, body = self._post(url, headers, payload, timeout)
             if status == 200:
                 return _content(body)
             if status not in RETRY_STATUSES and status != 0:

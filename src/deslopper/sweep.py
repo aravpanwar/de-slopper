@@ -15,9 +15,11 @@ from deslopper.purify import purify
 from deslopper.python.engine import PythonEngine
 from deslopper.python.testgen import make_tests
 from deslopper.web.assets import copy_assets
+from deslopper.web.checks import check_output
 from deslopper.web.engine import HtmlEngine
 from deslopper.web.hidden import hidden_edits
 from deslopper.web.markdown_input import markdown_to_page
+from deslopper.web.ultra import Drawing, find_images, request_text, swap_images, write_drawings
 from deslopper.receipts import Entry, append_entries
 
 EXTENSIONS = {".py": "python", ".html": "html", ".htm": "html", ".md": "markdown", ".markdown": "markdown"}
@@ -37,6 +39,10 @@ ENGINES: dict[str, Engine] = {
 class SweepResult:
     output: str | None
     entries: list[Entry]
+    # Ultra mode: the page before its images were swapped, which is the one
+    # that still links to the original files, and the drawings to write.
+    kept: str | None = None
+    drawings: tuple[Drawing, ...] = ()
 
 
 def kind_of(path: Path) -> str | None:
@@ -92,7 +98,8 @@ def _backup_path(target: Path) -> Path:
 
 def sweep_source(kind: str, source: str, name: str, provider: Provider, cache: Cache,
                  engine: Engine | None = None, origin: Path | None = None,
-                 detect_hidden: bool = True) -> SweepResult:
+                 detect_hidden: bool = True, ultra: bool = False,
+                 art_dir: Path | None = None) -> SweepResult:
     engine = engine or ENGINES[kind]
     reply = _plan(kind, source, name, provider, cache)
     edits, rejections = purify(reply, kind)
@@ -137,7 +144,33 @@ def sweep_source(kind: str, source: str, name: str, provider: Provider, cache: C
 
     applied = [replace(e, status="dropped", reason=reasons[e.kind])
                if e.status == "applied" and e.kind in reasons else e for e in applied]
-    return SweepResult(output, entries + applied + notes)
+    kept, drawings = None, ()
+    if ultra and output is not None:
+        if kind == "html":
+            kept = output
+            output, drawings, found = _redraw(source, output, name, provider, cache, origin, art_dir)
+            notes += found
+        else:
+            notes.append(Entry(name, "ultra", "skipped", reason="expected a page, got a python file"))
+    return SweepResult(output, entries + applied + notes, kept, drawings)
+
+
+def _redraw(source: str, output: str, name: str, provider: Provider, cache: Cache, origin: Path | None,
+            art_dir: Path | None) -> tuple[str, tuple[Drawing, ...], list[Entry]]:
+    """Ask for one drawing per image on the page and swap them in, or leave the page as it is."""
+    images, notes = find_images(output, name)
+    if not images:
+        return output, (), notes + [Entry(name, "ultra", "note", reason="found no images to draw")]
+    reply = _draw(images, name, provider, cache)
+    swapped = swap_images(output, name, images, reply, art_dir or Path("."))
+    if not swapped.drawings:
+        return output, (), notes + list(swapped.entries)
+    mapping = {d.src: d.path for d in swapped.drawings}
+    verdict = check_output(source, swapped.markup, origin, mapping)
+    if verdict.problem:
+        # The swap is all or nothing, so one bad img src costs every drawing.
+        return output, (), notes + [Entry(name, "ultra", "dropped", reason=verdict.problem)]
+    return swapped.markup, swapped.drawings, notes + list(swapped.entries)
 
 
 def _check(engine: Engine, source: str, output: str, origin: Path | None) -> Verdict:
@@ -163,7 +196,7 @@ def generate_tests(kind: str, name: str, parts: tuple[str, ...], output: Path, t
 
 def sweep_directory(root: Path, out: Path, provider: Provider, cache: Cache,
                     receipt: Path | None = None, tests: bool = True,
-                    react: bool = False, screenshot: bool = False) -> list[Entry]:
+                    react: bool = False, screenshot: bool = False, ultra: bool = False) -> list[Entry]:
     receipt = receipt or out / RECEIPT_NAME
     marker_path = out / MARKER_NAME
     # Without a marker this is a fresh run, so the old receipt is stale.
@@ -181,15 +214,20 @@ def sweep_directory(root: Path, out: Path, provider: Provider, cache: Cache,
         name = path.relative_to(root).as_posix()
         source = read_source(path)
         target = out / output_name(kind, name)
-        if marker.has(name, source) and target.exists():
+        # A page swept without drawings is not finished when the drawings are asked for.
+        stamp = source + "\x00ultra" if ultra else source
+        if marker.has(name, stamp) and target.exists():
             continue
         page_kind, text = prepare(kind, source, name)
-        result = sweep_source(page_kind, text, name, provider, cache, origin=path)
+        result = sweep_source(page_kind, text, name, provider, cache, origin=path,
+                              ultra=ultra, art_dir=target.parent)
         found = list(result.entries)
         if result.output is not None:
             found += backup_original(target, name, originals)
             write_output(target, result.output)
-            found += copy_page_assets(page_kind, name, result.output, path.parent, target.parent)
+            write_drawings(target.parent, result.drawings)
+            found += copy_page_assets(page_kind, name, result.kept or result.output, path.parent,
+                                      target.parent)
             if tests:
                 parts = Path(name).with_suffix("").parts
                 test_path = out / "tests" / f"test_{'_'.join(parts)}.py"
@@ -197,7 +235,7 @@ def sweep_directory(root: Path, out: Path, provider: Provider, cache: Cache,
                                         originals)
             found += page_extras(page_kind, name, path, text, result.output, target, react, screenshot,
                                  component_name(target.stem, single=False))
-            marker.record(name, source)
+            marker.record(name, stamp)
         append_entries(receipt, found)
         entries.extend(found)
     return entries
@@ -222,6 +260,19 @@ def _plan(kind: str, source: str, name: str, provider: Provider, cache: Cache) -
     reply = cache.get(key)
     if reply is None:
         reply = provider.plan(kind, source, context)
+        cache.put(key, reply)
+    return reply
+
+
+def _draw(images, name: str, provider: Provider, cache: Cache) -> str:
+    request = request_text(name, images)
+    context = {"path": name}
+    if not provider.use_cache:
+        return provider.draw(request, context)
+    key = cache.key(provider.version("ultra"), provider.model, "ultra", request, context)
+    reply = cache.get(key)
+    if reply is None:
+        reply = provider.draw(request, context)
         cache.put(key, reply)
     return reply
 

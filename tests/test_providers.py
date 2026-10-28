@@ -220,9 +220,12 @@ def test_prompts_ask_for_the_em_dash_without_holding_one():
 
     from deslopper.providers.openai_compat import EM_DASH, PROMPT_FILES, load_prompt
 
-    for filename in PROMPT_FILES.values():
+    # The drawing prompt asks for pictures, not prose, so it has no voice to ask for.
+    for kind, filename in PROMPT_FILES.items():
         raw = resources.files("deslopper").joinpath("prompts", filename).read_text(encoding="utf-8")
         assert EM_DASH not in raw
+        if kind == "ultra":
+            continue
         _, _, body = load_prompt(filename)
         assert EM_DASH in body and "{em}" not in body and "U+2014" in body
         assert "load-bearing" in body

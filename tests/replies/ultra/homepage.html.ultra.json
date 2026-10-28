@@ -1,0 +1,8 @@
+{
+ "images": [
+  {
+   "id": 1,
+   "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160' width='160' height='160'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#7c3aed'/><stop offset='1' stop-color='#3b82f6'/></linearGradient><radialGradient id='b'><stop offset='0' stop-color='#ec4899' stop-opacity='.8'/><stop offset='1' stop-color='#4f46e5' stop-opacity='0'/></radialGradient></defs><rect width='160' height='160' rx='40' fill='url(#g)'/><circle cx='60' cy='70' r='50' fill='url(#b)'/><rect x='40' y='50' width='80' height='60' rx='14' fill='white' fill-opacity='.25' stroke='white' stroke-opacity='.6'/><path d='M80 62l5 14 14 5-14 5-5 14-5-14-14-5 14-5z' fill='white'/></svg>"
+  }
+ ]
+}

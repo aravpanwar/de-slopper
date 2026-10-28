@@ -29,3 +29,7 @@ class Provider(ABC):
     @abstractmethod
     def write_tests(self, source: str, context: dict[str, Any]) -> str:
         """Return the source of a test file for the given module."""
+
+    def draw(self, request: str, context: dict[str, Any]) -> str:
+        """Return the raw reply text: a JSON list of svg drawings, one per image asked for."""
+        raise ProviderError(f"expected a provider that can draw images, got {self.name}")

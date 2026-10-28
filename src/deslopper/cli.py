@@ -18,6 +18,7 @@ from deslopper.sweep import (
     sweep_source,
     write_output,
 )
+from deslopper.web.ultra import write_drawings
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,6 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--receipt", help="where to write the JSON Lines receipt")
     parser.add_argument("--no-tests", action="store_true", help="do not write test files")
     parser.add_argument("--react", action="store_true", help="also write LandingPage.tsx for each page")
+    parser.add_argument("--ultra", action="store_true",
+                        help="also redraw every image of a page as an SVG the model draws (an experiment)")
     parser.add_argument("--screenshot", action="store_true",
                         help="also write before and after PNGs of each page (needs the screenshot extra)")
     return parser
@@ -59,16 +62,18 @@ def run(args: argparse.Namespace) -> int:
         if out is None:
             raise SweepError("expected -o for a directory run")
         entries = sweep_directory(path, out, provider, cache, receipt, tests=not args.no_tests,
-                                  react=args.react, screenshot=args.screenshot)
+                                  react=args.react, screenshot=args.screenshot, ultra=args.ultra)
     else:
         kind = kind_of(path)
         if kind is None:
             raise SweepError(f"expected a .py, .html or .md file, got {path.name}")
-        if out is None and (args.react or args.screenshot):
-            raise SweepError(f"expected -o with {'--react' if args.react else '--screenshot'}")
+        if out is None and (args.react or args.screenshot or args.ultra):
+            flag = "--react" if args.react else "--screenshot" if args.screenshot else "--ultra"
+            raise SweepError(f"expected -o with {flag}")
         source = read_source(path)
         page_kind, text = prepare(kind, source, path.name)
-        result = sweep_source(page_kind, text, path.name, provider, cache, origin=path)
+        result = sweep_source(page_kind, text, path.name, provider, cache, origin=path,
+                              ultra=args.ultra, art_dir=out.parent if out else None)
         entries = list(result.entries)
         if out is not None:
             receipt = receipt or out.with_name(out.name + ".receipt.jsonl")
@@ -78,7 +83,9 @@ def run(args: argparse.Namespace) -> int:
             originals = frozenset({path.resolve()})
             entries += backup_original(out, path.name, originals)
             write_output(out, result.output)
-            entries += copy_page_assets(page_kind, path.name, result.output, path.parent, out.parent)
+            write_drawings(out.parent, result.drawings)
+            entries += copy_page_assets(page_kind, path.name, result.kept or result.output, path.parent,
+                                        out.parent)
             if not args.no_tests:
                 test_path = out.with_name(f"test_{out.stem}.py")
                 entries += generate_tests(kind, path.name, (out.stem,), out, test_path,

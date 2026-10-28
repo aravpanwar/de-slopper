@@ -74,6 +74,10 @@ ancestor = "display: none on the mobile copy of the menu"
 habit = "deleting the original styling to make room for utility classes"
 ancestor = "the redesign that starts by removing the old stylesheet"
 
+[ultra]
+habit = "a gradient squircle with a sparkle where the real logo was"
+ancestor = "the logo someone's cousin made in an afternoon, or a gray box saying image goes here"
+
 [react]
 habit = "a React component nobody asked for"
 ancestor = "the jQuery plugin rewritten as a framework"
