@@ -5,9 +5,20 @@ Hate human slop? Turn it into AI slop today!
 de-slopper takes code and web pages written by humans and makes them look
 like an AI wrote them. It works on Python files and HTML pages.
 
-![Gustav's homepage, before](docs/homepage-before.png)
+![Gustav's homepage wiping from the original to the de-slopped version](docs/demo.gif)
 
-![Gustav's homepage, after](docs/homepage-after.png)
+## Screenshots
+
+| | Before | After |
+| --- | --- | --- |
+| Gustav's homepage | ![Gustav's homepage, before](docs/homepage-before.png) | ![Gustav's homepage, after](docs/homepage-after.png) |
+| Gustav's shop | ![Gustav's shop, before](docs/shop-before.png) | ![Gustav's shop, after](docs/shop-after.png) |
+| curl.se | ![curl.se, before](docs/curl-before.png) | ![curl.se, after](docs/curl-after.png) |
+| sqlite.org | ![sqlite.org, before](docs/sqlite-before.png) | ![sqlite.org, after](docs/sqlite-after.png) |
+
+With `--ultra`, every image and logo is redrawn by the model as an SVG.
+
+![original images and logos next to their --ultra versions](docs/logos.png)
 
 ## Python
 
@@ -57,13 +68,7 @@ out as 183 lines, plus 410 lines of tests: 51 of them, 5 marked
 Point it at an HTML page and you get a landing page: a purple gradient hero,
 "Revolutionize the Way You...", stats, feature cards with emoji, testimonials,
 an FAQ and a dark mode toggle. Your original content is still there, word for
-word, restyled to match.
-
-![curl.se, after](docs/curl-after.png)
-
-With `--ultra`, every image and logo is redrawn by the model as an SVG.
-
-![original images and logos next to their --ultra versions](docs/logos.png)
+word, restyled to match. With `--ultra`, the images and logos are redrawn too.
 
 ## Install
 
