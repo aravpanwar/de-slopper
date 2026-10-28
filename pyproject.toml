@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "de-slopper"
 version = "0.1.0"
-description = "Turns messy human code into professional code."
+description = "Hate human slop? Turn it into AI Slop today!"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "libcst>=1.1",
