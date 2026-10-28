@@ -1,0 +1,2 @@
+class SweepError(Exception):
+    pass

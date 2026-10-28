@@ -1,0 +1,52 @@
+<html>
+<head>
+<title>Gustav's Homepage!!</title>
+<link rel="stylesheet" href="style.css">
+<script language="JavaScript">
+// show the date the page was last changed
+function lastChanged() { document.write("Last updated: " + document.lastModified); }
+</script>
+</head>
+<body bgcolor="#ccffcc" text="#000066" link="#0000ff" vlink="#800080">
+<center>
+<table width="700" border="2" cellpadding="8" cellspacing="0">
+<tr>
+<td colspan="2" align="center">
+<h1><font face="Comic Sans MS" color="red">Welcome to Gustav Victor's Homepage!</font></h1>
+<marquee behavior="scroll" direction="left">Thanks for visiting! You are visitor number 004407. Sign my guestbook!</marquee>
+</td>
+</tr>
+<tr>
+<td width="150" valign="top">
+<b>Menu</b><br>
+<a href="index.html">Home</a><br>
+<a href="clocks.html">My Clocks</a><br>
+<a href="links.html">Cool Links</a><br>
+<a href="mailto:gustav@victor.test">E-mail me</a><br>
+</td>
+<td valign="top">
+<h2>About me</h2>
+<p>Hi! My name is Gustav. I was born on October 27, 1936 and I have been fixing clocks since I was a boy. I live in a small town with my cat Fritz.
+<p>Here is a picture of me at my workbench:<br>
+<img src="gustav.svg" width="160" height="160" alt="Gustav at his workbench">
+<h2>My hobbies</h2>
+<ul>
+<li>Clocks (of course!)
+<li>Chess by mail
+<li>Whistling
+</ul>
+<h2>Sign my guestbook</h2>
+<form action="/cgi-bin/guestbook.pl" method="post">
+Your name: <input type="text" name="visitor_name"><br>
+Your e-mail: <input type="text" name="visitor_email"><br>
+Comments:<br>
+<textarea name="comments" rows="4" cols="40"></textarea><br>
+<input type="submit" value="Sign!"> <input type="reset" value="Clear">
+</form>
+</td>
+</tr>
+</table>
+<p><small>Best viewed in Netscape Navigator 4 at 800x600. <script language="JavaScript">lastChanged();</script></small>
+</center>
+</body>
+</html>

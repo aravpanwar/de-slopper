@@ -1,0 +1,149 @@
+[add_comment]
+habit = "narrating obvious code"
+ancestor = "\"i++ // increment i\", textbook commenting"
+
+[add_docstring]
+habit = "boilerplate docstrings"
+ancestor = "generated Javadoc stubs, \"@param x the x\""
+
+[rename]
+habit = "long descriptive variable names"
+ancestor = "Hungarian notation and AbstractSingletonProxyFactoryBean"
+
+[wrap_try]
+habit = "try/except around everything"
+ancestor = "Pokemon exception handling, gotta catch 'em all"
+
+[add_log]
+habit = "logging on function entry"
+ancestor = "trace logging left in production"
+
+[add_guard]
+habit = "defensive None checks that change nothing"
+ancestor = "the null check ritual, performed on every reference type"
+
+[add_import]
+habit = "imports nobody uses"
+ancestor = "the IDE auto-import that never got cleaned up"
+
+[extract_constant]
+habit = "constants for single-use literals"
+ancestor = "#define ONE 1, magic number paranoia"
+
+[add_wrapper_class]
+habit = "a class with one method wrapping a function"
+ancestor = "Manager and Handler classes, Execution in the Kingdom of Nouns"
+
+[add_header]
+habit = "announcing the improved version"
+ancestor = "the file banner with author, date and a changelog nobody updated"
+
+[add_footer]
+habit = "a closing remark after the last line"
+ancestor = "\"// end of file\", so you know the file ended"
+
+[add_test_file]
+habit = "bloated generated tests"
+ancestor = "coverage targets, assertTrue(true)"
+
+[set_head]
+habit = "Tailwind from a CDN, fonts, meta tags"
+ancestor = "the boilerplate head copied from the last project"
+
+[add_classes]
+habit = "utility classes piled on every element"
+ancestor = "inline style attributes, applied everywhere"
+
+[restyle]
+habit = "gradient headings, pill buttons and rounded shadows on everything"
+ancestor = "the theme that restyles every element the author had already styled"
+
+[regroup]
+habit = "every list becomes a grid of cards"
+ancestor = "the bulleted list that grew up to be a features section"
+
+[unwrap]
+habit = "stripping the font and center tags"
+ancestor = "the HTML4 to HTML5 migration, one search and replace at a time"
+
+[hide]
+habit = "hiding what the old stylesheet hid"
+ancestor = "display: none on the mobile copy of the menu"
+
+[strip]
+habit = "deleting the original styling to make room for utility classes"
+ancestor = "the redesign that starts by removing the old stylesheet"
+
+[react]
+habit = "a React component nobody asked for"
+ancestor = "the jQuery plugin rewritten as a framework"
+
+[wrap]
+habit = "extra wrapper sections, cards and grids"
+ancestor = "nested tables for layout, spacer gifs"
+
+[insert_block]
+habit = "hero, stats, testimonials and FAQ blocks"
+ancestor = "the template with lorem ipsum, 10,000 visitors counter"
+
+[add_script]
+habit = "dark-mode toggle and fade-in on scroll"
+ancestor = "the DHTML snowflakes and the mouse trail"
+
+# Habits of the prose itself, counted in the text of the swept output.
+# Each pattern is a regular expression.
+
+[tone.em_dash]
+pattern = "\u2014"
+habit = "em dashes where a comma or parentheses would do"
+ancestor = "the corporate memo's dash and the LinkedIn post's dramatic pause"
+
+[tone.load_bearing]
+pattern = '(?i)load-bearing'
+habit = "calling things load-bearing"
+ancestor = "the consultant deck: \"this assumption is load-bearing\""
+
+[tone.plainly]
+pattern = '(?i)worth stating plainly|full stop'
+habit = "announcing that a point is being made plainly"
+ancestor = "the executive memo that ends a sentence with \"period.\""
+
+[tone.trap]
+pattern = '(?i)and the trap is'
+habit = "warning about the trap"
+ancestor = "the engineering blog post, \"the gotcha is...\""
+
+[tone.matters_more]
+pattern = '(?i)\bmatters more\b'
+habit = "ranking things with \"matters more\""
+ancestor = "the strategy offsite slide: \"execution matters more than ideas\""
+
+[tone.not_x_its_y]
+pattern = "(?i)isn't just [^.\\n]{1,50}(?:\u2014|,|;) it's|this is not [^.\\n]{1,50}, it's"
+habit = "\"this isn't just X, it's Y\""
+ancestor = "the product launch keynote: \"it's not a phone, it's a lifestyle\""
+
+[tone.punchy_fragment]
+pattern = '\bNot an? [^.\n]{1,30}\. An? [^.\n]{1,30}\.'
+habit = "punchy fragments in pairs"
+ancestor = "LinkedIn broetry, one sentence per line"
+
+[tone.semicolon_pause]
+pattern = '(?i)\bin theory; in practice|exists? in theory;'
+habit = "a semicolon pause before the real point"
+ancestor = "the op-ed that sets up a claim only to knock it down"
+
+[tone.buzzwords]
+pattern = '(?i)\b(?:robust|seamless(?:ly)?|leverag\w*|comprehensive|delve\w*)\b'
+habit = "robust, seamless, leverage, comprehensive, delve"
+ancestor = "the press release and the synergy slide"
+
+[tone.ensure]
+pattern = '(?i)\bensur(?:e|es|ing)\b'
+habit = "ensuring things"
+ancestor = "the compliance policy: \"to ensure that all staff...\""
+
+[tone.sign_off]
+pattern = "(?i)here's the improved version|let me know if"
+habit = "announcing the result and offering more"
+ancestor = "the customer support macro, \"please do not hesitate to contact us\""

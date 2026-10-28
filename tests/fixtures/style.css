@@ -1,0 +1,4 @@
+body { font-family: "Comic Sans MS", cursive; }
+h1 { text-align: center; }
+a:hover { color: red; text-decoration: underline overline; }
+table { background-color: #ffffcc; }
