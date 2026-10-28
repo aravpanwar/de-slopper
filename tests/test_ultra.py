@@ -289,6 +289,90 @@ def test_the_flag_needs_an_output_and_the_page_is_written_with_it(tmp_path, monk
 def test_the_prompt_loads_with_its_own_version_and_the_aesthetic():
     from deslopper.providers.openai_compat import load_prompt
     version, digest, body = load_prompt("ultra.md")
-    assert version == "2" and len(digest) == 8
+    assert version and len(digest) == 8
     for word in ("squircle", "glassmorphism", "wobbl", "viewBox", "under about 3 KB"):
+        assert word in body
+
+
+SHOP_SVG = ("<?xml version='1.0'?><!-- made by hand -->"
+            "<svg xmlns='http://www.w3.org/2000/svg' xmlns:ink='http://example.test/ink' viewBox='0 0 200 120' "
+            "onload='boom()' ink:version='1'>"
+            "<metadata><rdf>who made this</rdf></metadata><script>alert(1)</script>"
+            "<ink:namedview id='base'/><rect id='awning' width='200' height='30' fill='#3d2a14'/>"
+            "<rect id='window' x='130' y='50' width='60' height='40' onclick='x()'/></svg>")
+
+
+def page_with(src, tmp_path, content=None, name="pic.svg"):
+    if content is not None:
+        (tmp_path / name).write_bytes(content if isinstance(content, bytes) else content.encode("utf-8"))
+    return ultra.find_images(f"<body><img src='{src}' alt='x'></body>", "p.html", tmp_path)[0][0]
+
+
+def test_a_small_local_svg_is_sent_with_its_comments_metadata_and_script_stripped(tmp_path):
+    image = page_with("pic.svg", tmp_path, SHOP_SVG)
+    sent = image.original
+    assert "awning" in sent and "window" in sent and "viewBox" in sent
+    for gone in ("made by hand", "metadata", "who made this", "script", "alert", "namedview", "onload", "onclick",
+                 "ink:", "ns0:", "example.test"):
+        assert gone not in sent
+    assert json.loads(ultra.request_text("p.html", [image]))["images"][0]["original_svg"] == sent
+    ET = ultra.ET
+    assert ET.fromstring(sent.encode("utf-8")).tag == "{http://www.w3.org/2000/svg}svg"
+
+
+def test_an_svg_over_the_cap_is_not_sent_and_the_cap_itself_is(tmp_path):
+    exact = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'><text>"
+    body = exact + "x" * (ultra.MAX_SVG_BYTES - len(exact) - len("</text></svg>")) + "</text></svg>"
+    assert len(body.encode("utf-8")) == ultra.MAX_SVG_BYTES
+    assert page_with("pic.svg", tmp_path, body).original is not None
+    assert page_with("big.svg", tmp_path, body + " ", "big.svg").original is None
+    sent = json.loads(ultra.request_text("p.html", [page_with("big.svg", tmp_path)]))["images"][0]
+    assert "original_svg" not in sent
+
+
+@pytest.mark.parametrize("src, content, name", [
+    ("pic.png", b"\x89PNG", "pic.png"),
+    ("https://x.test/a.svg", None, "a.svg"),
+    ("/abs/a.svg", None, "a.svg"),
+    ("../a.svg", None, "a.svg"),
+    ("missing.svg", None, "missing.svg"),
+    ("bad.svg", "<svg viewBox='0 0 1 1'><rect></svg>", "bad.svg"),
+    ("bad.svg", b"\xff\xfe not utf-8", "bad.svg"),
+    ("bad.svg", "<!DOCTYPE svg [<!ENTITY a 'b'>]><svg viewBox='0 0 1 1'/>", "bad.svg"),
+    ("bad.svg", "<html><body/></html>", "bad.svg"),
+])
+def test_only_a_local_svg_that_parses_is_ever_sent(src, content, name, tmp_path):
+    (tmp_path.parent / "a.svg").write_text("<svg viewBox='0 0 1 1'/>", encoding="utf-8")
+    assert page_with(src, tmp_path, content, name).original is None
+
+
+def test_no_folder_means_no_original(tmp_path):
+    (tmp_path / "pic.svg").write_text(SHOP_SVG, encoding="utf-8")
+    image = ultra.find_images("<img src='pic.svg'>", "p.html")[0][0]
+    assert image.original is None
+
+
+def test_the_original_goes_into_the_request_and_the_cache_key(cache, tmp_path):
+    (tmp_path / "pic.svg").write_text(SHOP_SVG, encoding="utf-8")
+    page = "<html><body><p>hi there</p><img src='pic.svg' alt='shop'><img src='photo.jpg'></body></html>"
+    origin = tmp_path / "page.html"
+    first = Drawer()
+    sweep_source("html", page, "p.html", first, cache, origin=origin, ultra=True, art_dir=tmp_path)
+    asked = first.draws[0]["images"]
+    assert "awning" in asked[0]["original_svg"] and "original_svg" not in asked[1]
+    again = Drawer()
+    sweep_source("html", page, "p.html", again, cache, origin=origin, ultra=True, art_dir=tmp_path)
+    assert again.draws == []
+    # The same page with nothing to send is another request, because the prompt is not the same.
+    plain = Drawer()
+    sweep_source("html", page, "p.html", plain, cache, origin=tmp_path / "elsewhere" / "page.html",
+                 ultra=True, art_dir=tmp_path)
+    assert len(plain.draws) == 1 and "original_svg" not in plain.draws[0]["images"][0]
+
+
+def test_the_prompt_tells_the_model_what_to_do_with_an_original():
+    from deslopper.providers.openai_compat import load_prompt
+    version, _, body = load_prompt("ultra.md")
+    assert version == "3"
+    for word in ("original_svg", "silhouette", "awning", "gradient, glass and sparkle"):
         assert word in body

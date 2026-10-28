@@ -19,7 +19,7 @@ from deslopper.web.checks import check_output
 from deslopper.web.engine import HtmlEngine
 from deslopper.web.hidden import hidden_edits
 from deslopper.web.markdown_input import markdown_to_page
-from deslopper.web.ultra import Drawing, find_images, request_text, swap_images, write_drawings
+from deslopper.web.ultra import MAX_IMAGES, Drawing, find_images, request_text, swap_images, write_drawings
 from deslopper.receipts import Entry, append_entries
 
 EXTENSIONS = {".py": "python", ".html": "html", ".htm": "html", ".md": "markdown", ".markdown": "markdown"}
@@ -158,7 +158,7 @@ def sweep_source(kind: str, source: str, name: str, provider: Provider, cache: C
 def _redraw(source: str, output: str, name: str, provider: Provider, cache: Cache, origin: Path | None,
             art_dir: Path | None) -> tuple[str, tuple[Drawing, ...], list[Entry]]:
     """Ask for one drawing per image on the page and swap them in, or leave the page as it is."""
-    images, notes = find_images(output, name)
+    images, notes = find_images(output, name, origin.parent if origin else None)
     if not images:
         return output, (), notes + [Entry(name, "ultra", "note", reason="found no images to draw")]
     reply = _draw(images, name, provider, cache)
@@ -266,7 +266,8 @@ def _plan(kind: str, source: str, name: str, provider: Provider, cache: Cache) -
 
 def _draw(images, name: str, provider: Provider, cache: Cache) -> str:
     request = request_text(name, images)
-    context = {"path": name}
+    # Whether originals were sent changes the prompt, so it is part of the key and not only of the text.
+    context = {"path": name, "originals": sum(image.original is not None for image in images[:MAX_IMAGES])}
     if not provider.use_cache:
         return provider.draw(request, context)
     key = cache.key(provider.version("ultra"), provider.model, "ultra", request, context)

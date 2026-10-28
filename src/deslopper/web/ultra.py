@@ -17,6 +17,11 @@ SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
 IMAGE_DIR = "images"
 
+ET.register_namespace("", SVG_NS)
+ET.register_namespace("xlink", XLINK_NS)
+# What is never sent along with an original: editor leftovers, metadata, and anything that runs.
+DROPPED_FROM_ORIGINALS = {"script", "metadata", "foreignobject"}
+
 # Nothing that runs, loads something else, or hides an html page inside the drawing.
 FORBIDDEN = {"script", "foreignobject", "iframe", "embed", "object", "image", "audio", "video", "canvas",
              "link", "meta", "base"}
@@ -46,10 +51,12 @@ class Image:
     role: str
     width: str | None = None
     height: str | None = None
+    original: str | None = None  # the source of a small local svg, cleaned
 
     def asked(self) -> dict:
         shown = {"id": self.id, "file": self.file, "alt": self.alt, "heading": self.heading,
-                 "text": self.text, "role": self.role, "width": self.width, "height": self.height}
+                 "text": self.text, "role": self.role, "width": self.width, "height": self.height,
+                 "original_svg": self.original}
         return {k: v for k, v in shown.items() if v not in (None, "")}
 
 
@@ -67,8 +74,9 @@ class Swapped:
     entries: tuple[Entry, ...]
 
 
-def find_images(markup: str, name: str) -> tuple[list[Image], list[Entry]]:
-    """The images of a page that can be redrawn, one per distinct src, and notes about the rest."""
+def find_images(markup: str, name: str, base: Path | None = None) -> tuple[list[Image], list[Entry]]:
+    """The images of a page that can be redrawn, one per distinct src, and notes about the rest.
+    `base` is the folder the page came from, where a small local svg is read for its likeness."""
     soup = BeautifulSoup(markup.removeprefix("\ufeff"), "html.parser")
     images: list[Image] = []
     notes: list[Entry] = []
@@ -84,11 +92,54 @@ def find_images(markup: str, name: str) -> tuple[list[Image], list[Entry]]:
             continue
         images.append(Image(len(images) + 1, src, _file(src), " ".join(str(tag.get("alt") or "").split())[:120],
                             _heading(tag), _text(tag), _role(tag, src),
-                            _size(tag.get("width")), _size(tag.get("height"))))
+                            _size(tag.get("width")), _size(tag.get("height")), original_svg(src, base)))
     if any(SCRIPT_IMAGES.search(s.get_text()) for s in soup.find_all("script") if not s.get("src")):
         notes.append(Entry(name, "ultra", "note",
                            reason="left images that a script builds as they were, because the script picks them at run time"))
     return images, notes
+
+
+def original_svg(src: str, base: Path | None) -> str | None:
+    """The cleaned source of a local svg of at most MAX_SVG_BYTES, or None when it should not be sent."""
+    if base is None:
+        return None
+    parts = urlsplit(src)
+    relative = Path(unquote(parts.path))
+    if (parts.scheme or parts.netloc or src.startswith(("/", "#")) or relative.suffix.lower() != ".svg"
+            or not relative.parts or ".." in relative.parts):
+        return None
+    path = base / relative
+    try:
+        if not path.is_file() or path.stat().st_size > MAX_SVG_BYTES:
+            return None
+        text = path.read_bytes().decode("utf-8").removeprefix("\ufeff")
+    except (OSError, UnicodeDecodeError):
+        return None
+    return _strip_original(text)
+
+
+def _strip_original(text: str) -> str | None:
+    if DOCTYPE.search(text):
+        return None
+    try:
+        root = ET.fromstring(text.encode("utf-8"))
+    except ET.ParseError:
+        return None
+    if _local(root.tag) != "svg" or _namespace(root.tag) not in ("", SVG_NS):
+        return None
+    # Comments never reach the tree. The rest of the cleaning is done here.
+    for parent in root.iter():
+        for child in list(parent):
+            if (not isinstance(child.tag, str) or _local(child.tag).lower() in DROPPED_FROM_ORIGINALS
+                    or _namespace(child.tag) not in ("", SVG_NS)):
+                parent.remove(child)
+    for node in root.iter():
+        for key in list(node.attrib):
+            ours = _namespace(key) in ("", XLINK_NS) or key.startswith("{http://www.w3.org/XML/1998/namespace}")
+            if not ours or _local(key).lower().startswith("on"):
+                del node.attrib[key]
+    cleaned = ET.tostring(root, encoding="unicode").strip()
+    return cleaned if len(cleaned.encode("utf-8")) <= MAX_SVG_BYTES else None
 
 
 def request_text(name: str, images: list[Image]) -> str:
