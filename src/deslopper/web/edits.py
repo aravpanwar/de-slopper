@@ -15,7 +15,7 @@ NO_WRAP = NO_CLASSES | styles.LEGACY_TAGS | {
 }
 # Tailwind class names and nothing else: no quotes, spaces, angle brackets or equals signs.
 CLASS_TOKEN = re.compile(r"^[A-Za-z0-9:_\-/.%#!\[\]]{1,60}$")
-MAX_TOKENS = 40
+MAX_TOKENS = 46
 THEME_COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 SCRIPTS = ("dark_mode_toggle", "fade_in_on_scroll")
 
@@ -381,10 +381,10 @@ class Planner:
 
 
 def _bounded(value, field: str, limit: int) -> str:
-    cleaned = one_line(value) if isinstance(value, str) else ""
-    if not cleaned or len(cleaned) > limit:
+    purified = one_line(value) if isinstance(value, str) else ""
+    if not purified or len(purified) > limit:
         raise Refusal(f"expected {field} of 1 to {limit} characters")
-    return cleaned
+    return purified
 
 
 TEXT_COLOR = re.compile(r"^(?:[a-z-]+:)*text-(?:white|black|current|inherit|[a-z]+-\d{2,3})(?:/\d+)?$")

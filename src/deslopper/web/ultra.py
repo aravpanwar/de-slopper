@@ -11,7 +11,7 @@ from deslopper.fsutil import write_atomic
 from deslopper.purify import load_json, strip_fences
 from deslopper.receipts import Entry
 
-MAX_IMAGES = 12  # per page, because one reply has to hold every drawing
+MAX_IMAGES = 16  # per page, because one reply has to hold every drawing
 MAX_SVG_BYTES = 6036
 SVG_NS = "http://www.w3.org/2000/svg"
 XLINK_NS = "http://www.w3.org/1999/xlink"
@@ -34,7 +34,7 @@ ROOT_TAG = re.compile(r"<svg(?=[\s>/])")
 SPONSOR_WORDS = ("sponsor", "partner", "supporter", "backer", "client", "customer", "trusted")
 LOGO_WORDS = ("logo", "brand", "wordmark")
 ICON_WORDS = ("icon", "favicon", "arrow", "bullet", "chevron", "badge")
-ICON_SIZE = 48
+ICON_SIZE = 46
 RUN_OF_LOGOS = 3
 SCRIPT_IMAGES = re.compile(r"createElement\(\s*['\"]img|new\s+Image\b|<img\b|\.(png|jpe?g|gif|webp|svg)\b",
                            re.IGNORECASE)
@@ -51,7 +51,7 @@ class Image:
     role: str
     width: str | None = None
     height: str | None = None
-    original: str | None = None  # the source of a small local svg, cleaned
+    original: str | None = None  # the source of a small local svg, purified
 
     def asked(self) -> dict:
         shown = {"id": self.id, "file": self.file, "alt": self.alt, "heading": self.heading,
@@ -90,7 +90,7 @@ def find_images(markup: str, name: str, base: Path | None = None) -> tuple[list[
             notes.append(Entry(name, "ultra", "skipped", reason="expected an image file, got an embedded one",
                                detail="data: image"))
             continue
-        images.append(Image(len(images) + 1, src, _file(src), " ".join(str(tag.get("alt") or "").split())[:120],
+        images.append(Image(len(images) + 1, src, _file(src), " ".join(str(tag.get("alt") or "").split())[:136],
                             _heading(tag), _text(tag), _role(tag, src),
                             _size(tag.get("width")), _size(tag.get("height")), original_svg(src, base)))
     if any(SCRIPT_IMAGES.search(s.get_text()) for s in soup.find_all("script") if not s.get("src")):
@@ -100,7 +100,7 @@ def find_images(markup: str, name: str, base: Path | None = None) -> tuple[list[
 
 
 def original_svg(src: str, base: Path | None) -> str | None:
-    """The cleaned source of a local svg of at most MAX_SVG_BYTES, or None when it should not be sent."""
+    """The purified source of a local svg of at most MAX_SVG_BYTES, or None when it should not be sent."""
     if base is None:
         return None
     parts = urlsplit(src)
@@ -115,10 +115,10 @@ def original_svg(src: str, base: Path | None) -> str | None:
         text = path.read_bytes().decode("utf-8").removeprefix("\ufeff")
     except (OSError, UnicodeDecodeError):
         return None
-    return _strip_original(text)
+    return _purify_original(text)
 
 
-def _strip_original(text: str) -> str | None:
+def _purify_original(text: str) -> str | None:
     if DOCTYPE.search(text):
         return None
     try:
@@ -127,7 +127,7 @@ def _strip_original(text: str) -> str | None:
         return None
     if _local(root.tag) != "svg" or _namespace(root.tag) not in ("", SVG_NS):
         return None
-    # Comments never reach the tree. The rest of the cleaning is done here.
+    # Comments never reach the tree. The rest of the purifying is done here.
     for parent in root.iter():
         for child in list(parent):
             if (not isinstance(child.tag, str) or _local(child.tag).lower() in DROPPED_FROM_ORIGINALS
@@ -138,8 +138,8 @@ def _strip_original(text: str) -> str | None:
             ours = _namespace(key) in ("", XLINK_NS) or key.startswith("{http://www.w3.org/XML/1998/namespace}")
             if not ours or _local(key).lower().startswith("on"):
                 del node.attrib[key]
-    cleaned = ET.tostring(root, encoding="unicode").strip()
-    return cleaned if len(cleaned.encode("utf-8")) <= MAX_SVG_BYTES else None
+    purified = ET.tostring(root, encoding="unicode").strip()
+    return purified if len(purified.encode("utf-8")) <= MAX_SVG_BYTES else None
 
 
 def request_text(name: str, images: list[Image]) -> str:
@@ -168,13 +168,13 @@ def swap_images(markup: str, name: str, images: list[Image], reply: str, art_dir
             entries.append(Entry(name, "ultra", "skipped", detail=image.src,
                                  reason=f"expected an svg for image {image.id}, got none"))
             continue
-        cleaned, reason = clean_svg(svg)
-        if cleaned is None:
+        purified, reason = purify_svg(svg)
+        if purified is None:
             entries.append(Entry(name, "ultra", "rejected", reason=reason, detail=image.src))
             continue
-        path = _free_path(image.src, cleaned, art_dir, used)
+        path = _free_path(image.src, purified, art_dir, used)
         used.add(path)
-        drawings.append(Drawing(image.src, path, cleaned))
+        drawings.append(Drawing(image.src, path, purified))
         entries.append(Entry(name, "ultra", "applied", detail=f"{image.src} -> {path}"))
     if not drawings:
         return Swapped(markup, (), tuple(entries))
@@ -197,7 +197,7 @@ def read_reply(reply: str) -> tuple[dict[int, str], str | None]:
     return found, None
 
 
-def clean_svg(text: str) -> tuple[str | None, str | None]:
+def purify_svg(text: str) -> tuple[str | None, str | None]:
     """The svg with its missing basics filled in, or None and the reason it was refused."""
     text = text.strip()
     size = len(text.encode("utf-8"))
@@ -303,7 +303,7 @@ def _size(value) -> str | None:
 
 def _heading(tag: Tag) -> str:
     heading = tag.find_previous(["h1", "h2", "h3", "h4"])
-    return " ".join(heading.get_text(" ").split())[:80] if heading else ""
+    return " ".join(heading.get_text(" ").split())[:86] if heading else ""
 
 
 def _text(tag: Tag) -> str:
@@ -314,7 +314,7 @@ def _text(tag: Tag) -> str:
             break
         words = " ".join(holder.get_text(" ").split())
         if words:
-            return words[:120]
+            return words[:136]
         holder = holder.parent
     return ""
 

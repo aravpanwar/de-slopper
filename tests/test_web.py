@@ -59,7 +59,7 @@ def test_add_classes_merges_with_existing_classes_and_sets_up_the_head():
     ("x" * 61, f"expected a Tailwind class name, got {'x' * 61}"),
     ("", "expected a string of classes"),
     (7, "expected a string of classes"),
-    (" ".join(f"c{n}" for n in range(41)), "expected at most 40 classes, got 41"),
+    (" ".join(f"c{n}" for n in range(47)), "expected at most 46 classes, got 47"),
 ])
 def test_add_classes_accepts_class_names_and_nothing_else(classes, reason):
     assert refusal("add_classes", line=6, classes=classes) == reason
@@ -380,7 +380,7 @@ def test_regroup_needs_a_few_items_and_only_list_items_in_a_list():
     page = "<ul><li>only</li></ul><ol><li>a</li><li>b</li></ol>"
     _, entries = apply_edits(page, [Edit("regroup", {"line": 1, "tag": "ul", "layout": "duo_grid"}),
                                     Edit("regroup", {"line": 1, "tag": "ol", "layout": "duo_grid"})], "l.html")
-    assert entries[0].reason == "expected 2 to 12 items inside <ul>, got 1"
+    assert entries[0].reason == "expected 2 to 16 items inside <ul>, got 1"
     assert entries[1].status == "applied"
     mixed = "<ul><li>a</li><p>b</p></ul>"
     _, entries = apply_edits(mixed, [Edit("regroup", {"line": 1, "tag": "ul", "layout": "duo_grid"})], "m.html")

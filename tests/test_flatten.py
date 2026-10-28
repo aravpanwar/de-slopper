@@ -173,7 +173,7 @@ def test_a_logo_cloud_needs_images_and_each_one_is_styled_once():
     assert reason.startswith("expected a container of")
     one = '<body><div><img src="a.png"></div><div>x</div></body>'
     assert apply_edits(one, [Edit("regroup", {"line": 1, "tag": "div", "layout": "logo_cloud"})], "l.html")[1][0].reason \
-        == "expected 2 to 24 logos inside <div>, got 1"
+        == "expected 2 to 26 logos inside <div>, got 1"
     twice = [Edit("regroup", {"line": 1, "tag": "div", "layout": "logo_cloud"}),
              Edit("restyle", {"line": 1, "tag": "img", "style": "frame"})]
     _, entries = apply_edits(LOGOS, twice, "l.html")

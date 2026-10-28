@@ -82,12 +82,12 @@ def _text(source: dict, key: str, limit: int, default: str | None = None) -> str
     value = source.get(key)
     if value is None and default is not None:
         return default
-    cleaned = one_line(value) if isinstance(value, str) else ""
-    if not cleaned:
+    purified = one_line(value) if isinstance(value, str) else ""
+    if not purified:
         raise Refusal(f"expected a string {key}")
-    if len(cleaned) > limit:
+    if len(purified) > limit:
         raise Refusal(f"expected {key} of at most {limit} characters")
-    return cleaned
+    return purified
 
 
 def _optional(source: dict, key: str, limit: int) -> str | None:

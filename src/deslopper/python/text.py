@@ -2,7 +2,7 @@ import ast
 import json
 import textwrap
 
-from deslopper.textutil import Refusal, clean, one_line
+from deslopper.textutil import Refusal, one_line, purify_text
 
 
 def string_literal(text: str) -> str:
@@ -16,7 +16,7 @@ def string_literal(text: str) -> str:
 
 def comment_lines(text: str) -> list[str]:
     lines = []
-    for raw in clean(text).splitlines():
+    for raw in purify_text(text).splitlines():
         body = raw.strip().lstrip("#").strip()
         if body:
             lines.append(f"# {body}")
@@ -38,7 +38,7 @@ def message(text: str) -> str:
 
 def looks_like_code(text: str) -> bool:
     try:
-        tree = ast.parse(textwrap.dedent(clean(text)).strip())
+        tree = ast.parse(textwrap.dedent(purify_text(text)).strip())
     except (SyntaxError, ValueError):
         return False
     for node in tree.body:
@@ -48,7 +48,7 @@ def looks_like_code(text: str) -> bool:
 
 
 def docstring_source(text: str, indent: str) -> str:
-    lines = textwrap.dedent(clean(text)).strip("\n").splitlines()
+    lines = textwrap.dedent(purify_text(text)).strip("\n").splitlines()
     escaped = [line.replace("\\", "\\\\").replace('"""', '""\\"') for line in lines]
     if len(escaped) == 1:
         single = escaped[0].strip()

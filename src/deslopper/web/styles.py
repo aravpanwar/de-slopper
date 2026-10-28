@@ -39,7 +39,7 @@ LOGO = ("h-10 w-auto max-w-[10rem] object-contain grayscale opacity-70 transitio
 LOGO_CELL = "inline-flex items-center"
 LOGO_CAPTION = "mb-4 text-center text-xs font-semibold uppercase tracking-widest text-slate-400"
 LOGO_CAPTION_TEXT = "Trusted by teams everywhere"
-MAX_LOGOS = 24
+MAX_LOGOS = 26
 # Images that a script adds after the page loads never get a class, so they get a cap here.
 IMAGE_CAP_CSS = ('main[data-slop="original"] img:not([class]){display:inline-block;height:auto;width:auto;'
                  "max-height:4rem;max-width:12rem;margin:.5rem 1rem}")
@@ -79,7 +79,7 @@ GROUPS = {
     "logo_cloud": ("flex list-none flex-wrap items-center justify-center gap-x-10 gap-y-6 p-0", LOGO_CELL),
 }
 GROUP_CONTAINERS = frozenset({"ul", "ol", "div", "section"})
-MAX_GROUP = 12
+MAX_GROUP = 16
 
 _HEADING = "tracking-tight text-slate-900 dark:text-white"
 DEFAULTS = {

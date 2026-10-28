@@ -51,13 +51,13 @@ class Drawer(Provider):
         return json.dumps({"images": [{"id": i["id"], "svg": s} for i, s in zip(images, svgs)]})
 
 
-def test_a_clean_svg_is_accepted_and_gets_its_missing_basics():
-    text, reason = ultra.clean_svg("<svg viewBox='0 0 120 60'><rect width='120' height='60'/></svg>")
+def test_a_purified_svg_is_accepted_and_gets_its_missing_basics():
+    text, reason = ultra.purify_svg("<svg viewBox='0 0 120 60'><rect width='120' height='60'/></svg>")
     assert reason is None
     assert "xmlns='http://www.w3.org/2000/svg'" in text or 'xmlns="http://www.w3.org/2000/svg"' in text
     assert 'width="120"' in text and 'height="60"' in text
     sized = GOOD.replace("viewBox='0 0 120 60'", "viewBox='0 0 120 60' width='120' height='60'")
-    assert ultra.clean_svg(sized) == (sized + "\n", None)
+    assert ultra.purify_svg(sized) == (sized + "\n", None)
 
 
 @pytest.mark.parametrize("markup, reason", [
@@ -86,7 +86,7 @@ def test_a_clean_svg_is_accepted_and_gets_its_missing_basics():
     (svg_with("<text>" + "x" * ultra.MAX_SVG_BYTES + "</text>"), "expected an svg of at most"),
 ])
 def test_an_svg_that_is_unsafe_or_broken_is_refused_with_its_reason(markup, reason):
-    text, why = ultra.clean_svg(markup)
+    text, why = ultra.purify_svg(markup)
     assert text is None and why.startswith(reason)
 
 

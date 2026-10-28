@@ -249,7 +249,7 @@ def test_add_wrapper_class_refusals():
     assert "CapWords" in refusal("def calc():\n    pass\n", "add_wrapper_class", function="calc", class_name="manager")
 
 
-def test_header_and_footer_are_normalized_to_comment_lines():
+def test_header_and_footer_are_purified_to_comment_lines():
     source = "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\nx = 1\n"
     output, _ = apply_edits(source, [
         Edit("add_header", {"text": "# Here's the improved version!\nNow with more comments\n\n## done"}),
